@@ -52,7 +52,6 @@ const startCapture = () => {
 
         captureSession.on('packet', (rawPacket) => {
             const packet = parsePacket(rawPacket);
-            console.log("packet:", packet)
             io.emit('packet', packet);
         });
     } catch (error) {
