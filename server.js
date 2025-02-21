@@ -8,7 +8,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const pcap = require('pcap');
-const NetworkInterface = require('pcap/lib/network_interface');
+// const NetworkInterface = require('pcap/lib/network_interface');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,7 +19,11 @@ app.use(express.static('public'));
 let captureSession = null;
 let isCapturing = false;
 
-// list all interfaces
+// Hardcoded interface name
+const DEFAULT_INTERFACE = 'en0';
+
+
+/*
 const getInterfaces = () => {
     try {
         const interfaces = NetworkInterface.findalldevs()
@@ -38,15 +42,17 @@ const getInterfaces = () => {
         return [];
     }
 };
+*/
 
-// starts capturing the network
-const startCapture = (iface = 'en0') => {
+// Modify startCapture to use default interface
+const startCapture = () => {
     try {
-        captureSession = pcap.createSession(iface, '');
+        captureSession = pcap.createSession(DEFAULT_INTERFACE, '');
         isCapturing = true;
 
         captureSession.on('packet', (rawPacket) => {
             const packet = parsePacket(rawPacket);
+            console.log("packet:", packet)
             io.emit('packet', packet);
         });
     } catch (error) {
@@ -81,6 +87,7 @@ const parsePacket = (rawPacket) => {
 const getProtocol = (packet) => {
     if (packet.payload?.payload) {
         const protocol = packet.payload.payload.constructor.name;
+        console.log("protocol:", protocol)
         return protocol || 'Unknown';
     }
     return 'Unknown';
@@ -88,6 +95,7 @@ const getProtocol = (packet) => {
 
 const getSource = (packet) => {
     if (packet.payload?.saddr) {
+        console.log("source:", packet.payload.saddr.toString())
         return packet.payload.saddr.toString();
     }
     return 'Unknown';
@@ -112,16 +120,17 @@ const getInfo = (packet) => {
     return '';
 };
 
-// socket
+// Modify socket connection handler
 io.on('connection', (socket) => {
     console.log('Client connected');
 
-    const interfaces = getInterfaces();
-    console.log('Sending interfaces to client:', JSON.stringify(interfaces, null, 2));
-    socket.emit('interfaces', interfaces);
+    // Comment out interface sending
+    // const interfaces = getInterfaces();
+    // console.log('Sending interfaces to client:', JSON.stringify(interfaces, null, 2));
+    // socket.emit('interfaces', interfaces);
 
-    socket.on('start-capture', (iface) => {
-        startCapture(iface);
+    socket.on('start-capture', () => {
+        startCapture();
     });
 
     socket.on('stop-capture', () => {

@@ -33,9 +33,6 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <select id="interfaceSelect">
-        <option value="">Select Network Interface</option>
-    </select>
     <button id="startBtn">Start Capture</button>
     <button id="stopBtn">Stop Capture</button>
 
@@ -60,27 +57,12 @@
     <script>
         const socket = io();
         const packetList = document.getElementById('packetList');
-        const interfaceSelect = document.getElementById('interfaceSelect');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         let packets = [];
 
-        socket.on('network-interfaces', (interfaces) => {
-            interfaces.forEach(interface => {
-                const option = document.createElement('option');
-                option.value = interface.name;
-                option.textContent = `${interface.name} - ${interface.description}`;
-                interfaceSelect.appendChild(option);
-            });
-        });
-
         startBtn.addEventListener('click', () => {
-            const selectedInterface = interfaceSelect.value;
-            if (selectedInterface) {
-                socket.emit('start-capture', selectedInterface);
-            } else {
-                alert('Please select a network interface');
-            }
+            socket.emit('start-capture');
         });
 
         stopBtn.addEventListener('click', () => {
