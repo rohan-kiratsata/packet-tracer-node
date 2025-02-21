@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Packet Capture</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px;
+            margin-right: 10px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <select id="interfaceSelect">
+        <option value="">Select Network Interface</option>
+    </select>
+    <button id="startBtn">Start Capture</button>
+    <button id="stopBtn">Stop Capture</button>
+
+    <div class="controls">
+        <button onclick="clearPackets()">Clear</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Protocol</th>
+                <th>Length</th>
+                <th>Info</th>
+            </tr>
+        </thead>
+        <tbody id="packetList"></tbody>
+    </table>
+
+    <script>
+        const socket = io();
+        const packetList = document.getElementById('packetList');
+        const interfaceSelect = document.getElementById('interfaceSelect');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        let packets = [];
+
+        socket.on('network-interfaces', (interfaces) => {
+            interfaces.forEach(interface => {
+                const option = document.createElement('option');
+                option.value = interface.name;
+                option.textContent = `${interface.name} - ${interface.description}`;
+                interfaceSelect.appendChild(option);
+            });
+        });
+
+        startBtn.addEventListener('click', () => {
+            const selectedInterface = interfaceSelect.value;
+            if (selectedInterface) {
+                socket.emit('start-capture', selectedInterface);
+            } else {
+                alert('Please select a network interface');
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            socket.emit('stop-capture');
+        });
+
+        function clearPackets() {
+            packets = [];
+            packetList.innerHTML = '';
+        }
+
+        socket.on('packet', (packet) => {
+            packets.unshift(packet);
+            if (packets.length > 1000) {
+                packets.pop();
+            }
+            updatePacketList();
+        });
+
+        function updatePacketList() {
+            packetList.innerHTML = packets.map(packet => `
+                <tr>
+                    <td>${packet.timestamp}</td>
+                    <td>${packet.source}</td>
+                    <td>${packet.destination}</td>
+                    <td>${packet.protocol}</td>
+                    <td>${packet.length}</td>
+                    <td>${packet.info}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html> 
